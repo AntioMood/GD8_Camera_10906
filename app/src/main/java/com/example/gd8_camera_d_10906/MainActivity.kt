@@ -1,33 +1,62 @@
 package com.example.gd8_camera_d_10906
 
-import android.annotation.SuppressLint
-import android.hardware.Camera
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
-import android.view.View
-import android.widget.FrameLayout
-import android.widget.ImageButton
-import java.lang.Exception
+import android.widget.TextView
+import android.widget.Toast
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
-    private var mCamera:Camera? = null
-    private var mCameraView: CameraView? = null
+    lateinit var sensorStatusTV : TextView
+    lateinit var proximitySensor : Sensor
+    lateinit var sensorManager: SensorManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        try {
-            mCamera = Camera.open()
-        }catch (e : Exception){
-            Log.d("Error", "Failed to Get Camera" + e.message)
+        // on below line we are initializing our all variables.
+        var proximitySensorEventListener : SensorEventListener? = object : SensorEventListener{
+            override fun onAccuracyChanged(sensor: Sensor, Accuracy: Int) {
+
+            }
+            override fun onSensorChanged(event: SensorEvent) {
+                if (event.sensor.type == Sensor.TYPE_PROXIMITY) {
+                    if (event.values[0] == 0f) {
+                        // here we are setting our status to our textview..
+                        // if sensor event return 0 then object is closed
+                        // to sensor else object is away from sensor.
+                        sensorStatusTV.text = "<<<Near>>>"
+                    } else {
+                        // on below line we are setting text for text view
+                        // as object is away from sensor.
+                        sensorStatusTV.text = "<<<<Away>>>>"
+                    }
+                }
+            }
         }
-        if (mCamera != null){
-            mCameraView = CameraView(this, mCamera!!)
-            val camera_view = findViewById<View>(R.id.FlCamera) as FrameLayout
-            camera_view.addView(mCameraView)
+        sensorStatusTV = findViewById(R.id.idTVSensorStatus)
+        // on below line we are initializing our sensor manager
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        // on below line we are initializing our proximity sensor variable
+        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
+        // on below line we are checking if the proximity sensor is null
+        if (proximitySensor == null) {
+            // on below line we are displaying a toast if no sensor is available
+            Toast.makeText(this, "No proximity sensor found in device..", Toast.LENGTH_SHORT).show()
+            finish()
+        } else {
+            // on below line we are registering
+            // our sensor with sensor manager
+            sensorManager.registerListener(
+                proximitySensorEventListener,
+                proximitySensor,
+                SensorManager.SENSOR_DELAY_NORMAL
+            )
         }
-        @SuppressLint("MissingInflatedId", "LocalSuppress")
-        val imageClose = findViewById<View>(R.id.imgClose) as ImageButton
-        imageClose.setOnClickListener{view:View? -> System.exit(0)}
+
     }
 }
